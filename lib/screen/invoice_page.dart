@@ -8,11 +8,18 @@ class InvoicePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = const Color(0xFF00A7B3);
     final textTheme = Theme.of(context).textTheme;
-    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("فاتورة الدفع"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("فاتورة الدفع"),
+        centerTitle: true,
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+      ),
+
+      backgroundColor: const Color(0xFFF5F5F5),
 
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -41,7 +48,10 @@ class InvoicePage extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       "تم الدفع بنجاح",
-                      style: textTheme.titleLarge!.copyWith(color: primary),
+                      style: textTheme.titleLarge!.copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 5),
                     Text(
@@ -98,7 +108,7 @@ class InvoicePage extends StatelessWidget {
                   icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                   label: const Text(
                     "تحميل الفاتورة PDF",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ),
               ),
@@ -132,7 +142,7 @@ class InvoicePage extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 16,
-              color: highlight ? Colors.green : Colors.black87,
+              color: highlight ? Colors.green : const Color(0xFF333333),
               fontWeight: FontWeight.bold,
             ),
           ),
