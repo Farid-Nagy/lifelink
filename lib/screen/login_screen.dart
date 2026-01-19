@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: GestureDetector(
-                    onTap: openHomeScreen,
+                    onTap: signIn,
                     child: Container(
                       padding: EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
