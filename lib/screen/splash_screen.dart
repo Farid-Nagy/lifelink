@@ -47,4 +47,6 @@
     //  ),
    // );
  // }
-//}
+//git add .
+// git commit -m "Base app
+// git push }
