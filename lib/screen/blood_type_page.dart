@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Pay_Now.dart';
 
 class BloodTypePage extends StatefulWidget {
   const BloodTypePage({super.key});
@@ -10,6 +11,9 @@ class BloodTypePage extends StatefulWidget {
 class _BloodTypePageState extends State<BloodTypePage> {
   String? selectedBlood;
   String? selectedHospital;
+
+  int count = 1;
+  DateTime? receiveDate;
 
   final List<String> bloodTypes = [
     'A+',
@@ -44,17 +48,25 @@ class _BloodTypePageState extends State<BloodTypePage> {
     'O-': ['Hospital B'],
   };
 
-  void openHomeScreen() {
-    Navigator.of(context).pushNamed("homeScreen");
-  }
+  void pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
 
-  void payNow() {
-    Navigator.of(context).pushNamed("payNow");
+    if (date != null) {
+      setState(() {
+        receiveDate = date;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // ✅ باك جراوند أبيض
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
@@ -63,7 +75,7 @@ class _BloodTypePageState extends State<BloodTypePage> {
             color: Colors.white,
             fontFamily: "Cairo",
             fontWeight: FontWeight.bold,
-            fontSize: 22.0,
+            fontSize: 22,
           ),
         ),
         centerTitle: true,
@@ -73,6 +85,7 @@ class _BloodTypePageState extends State<BloodTypePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            /// 🔹 Grid Blood Types
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -98,7 +111,7 @@ class _BloodTypePageState extends State<BloodTypePage> {
                       color: isSelected
                           ? const Color(0xFF00A7B3)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFF00A7B3)),
                     ),
                     child: Column(
@@ -129,62 +142,104 @@ class _BloodTypePageState extends State<BloodTypePage> {
 
             const SizedBox(height: 20),
 
+            /// 🔹 Hospital Dropdown (كيرف)
             DropdownButtonFormField<String>(
-              //تم اضافته
               value: selectedHospital,
               hint: const Text('Select hospital'),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Hospital',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               items: selectedBlood == null
                   ? []
                   : hospitals[selectedBlood]!
-                        .map(
-                          (h) => DropdownMenuItem<String>(
-                            value: h,
-                            child: Text(h),
-                          ),
-                        )
+                        .map((h) => DropdownMenuItem(value: h, child: Text(h)))
                         .toList(),
               onChanged: selectedBlood == null
                   ? null
-                  : (value) {
-                      setState(() {
-                        selectedHospital = value;
-                      });
-                    },
+                  : (value) => setState(() => selectedHospital = value),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// 🔹 Counter
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: count > 1 ? () => setState(() => count--) : null,
+                  icon: const Icon(Icons.remove),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey),
+                  ),
+                  child: Text('$count', style: const TextStyle(fontSize: 18)),
+                ),
+                IconButton(
+                  onPressed: () => setState(() => count++),
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            /// 🔹 Date Picker
+            InkWell(
+              onTap: pickDate,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: Text(
+                  receiveDate == null
+                      ? 'Select receive date'
+                      : 'Receive Date: ${receiveDate!.day}/${receiveDate!.month}/${receiveDate!.year}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
             ),
 
             const Spacer(),
 
+            /// 🔹 Next Button
             SizedBox(
-              child: GestureDetector(
-                onTap: selectedBlood != null && selectedHospital != null
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00A7B3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                onPressed:
+                    selectedBlood != null &&
+                        selectedHospital != null &&
+                        receiveDate != null
                     ? () {
-                        payNow();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PayNow(),
+                          ),
+                        );
                       }
                     : null,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A7B3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    onPressed: selectedBlood != null && selectedHospital != null
-                        ? () {
-                            payNow();
-                          }
-                        : null,
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
+                child: const Text(
+                  'Next',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
