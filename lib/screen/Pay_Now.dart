@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'invoice_page.dart';
 
+const Color primaryColor = Color(0xFF00A7B3);
+
 class PayNow extends StatelessWidget {
-  const PayNow({super.key});
+  final String bloodType;
+  final String hospital;
+  final int quantity;
+  final DateTime receiveDate;
+
+  const PayNow({
+    super.key,
+    required this.bloodType,
+    required this.hospital,
+    required this.quantity,
+    required this.receiveDate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,22 +26,34 @@ class PayNow extends StatelessWidget {
         brightness: Brightness.light,
         fontFamily: 'Tajawal',
         scaffoldBackgroundColor: const Color(0xFFF7F7F8),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00A7B3)),
+        colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
       ),
-      home: const Directionality(
+      home: Directionality(
         textDirection: TextDirection.ltr,
-        child: PaymentScreen(),
+        child: PaymentScreen(
+          bloodType: bloodType,
+          hospital: hospital,
+          quantity: quantity,
+          receiveDate: receiveDate,
+        ),
       ),
     );
   }
 }
 
-// ======================================================
-//                      PAYMENT SCREEN
-// ======================================================
-
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final String bloodType;
+  final String hospital;
+  final int quantity;
+  final DateTime receiveDate;
+
+  const PaymentScreen({
+    super.key,
+    required this.bloodType,
+    required this.hospital,
+    required this.quantity,
+    required this.receiveDate,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -39,14 +64,15 @@ enum PaymentMethod { telda, visa, mastercard }
 class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethod _selected = PaymentMethod.telda;
 
-  final double _amount = 200.0;
+  final double _amountPerBag = 200.0;
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _cardNumber = TextEditingController();
   final TextEditingController _expiry = TextEditingController();
   final TextEditingController _cvv = TextEditingController();
 
-  // ---------------- Formatting ----------------
+  double get totalAmount => _amountPerBag * widget.quantity;
+
   void _formatCardNumber(String value) {
     value = value.replaceAll(" ", "");
     String newValue = "";
@@ -62,8 +88,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   void _formatExpiry(String value) {
     value = value.replaceAll("/", "");
-    if (value.length >= 3)
+    if (value.length >= 3) {
       value = value.substring(0, 2) + "/" + value.substring(2);
+    }
     _expiry.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
@@ -85,20 +112,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
-  // ======================================================
-  //                        BUILD UI
-  // ======================================================
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final text = theme.textTheme;
-    final primary = theme.colorScheme.primary;
+    final text = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
         elevation: 1,
-        backgroundColor: Colors.white,
+        backgroundColor: primaryColor,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
@@ -106,17 +127,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: primary,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Icon(Icons.bloodtype, color: Colors.white),
+              child: Icon(Icons.bloodtype, color: primaryColor),
             ),
             const SizedBox(width: 10),
-            Text("Lifelink", style: text.titleLarge),
+            Text(
+              "Lifelink",
+              style: text.titleLarge!.copyWith(color: Colors.white),
+            ),
           ],
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -124,8 +147,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text("Payment", style: text.displayMedium),
             const SizedBox(height: 15),
-
-            _summaryCard(text, primary),
+            _summaryCard(text),
             const SizedBox(height: 25),
 
             Text("Payment Method", style: text.titleMedium),
@@ -155,10 +177,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
 
             const SizedBox(height: 25),
-            Form(key: _formKey, child: _cardForm(text, primary)),
-            const SizedBox(height: 25),
 
-            _payBtn(primary, text),
+            /// 🔥 التعديل هنا (Telda أصبح يستخدم نفس الكارد فورم)
+            Form(key: _formKey, child: _cardForm(text)),
+
+            const SizedBox(height: 25),
+            _payBtn(),
             const SizedBox(height: 20),
 
             Center(
@@ -170,11 +194,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // ======================================================
-  //                         SUMMARY CARD
-  // ======================================================
-
-  Widget _summaryCard(TextTheme text, Color primary) {
+  Widget _summaryCard(TextTheme text) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -187,11 +207,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Text(
             "Transaction Summary",
-            style: text.titleMedium!.copyWith(color: primary),
+            style: text.titleMedium!.copyWith(color: primaryColor),
           ),
           const SizedBox(height: 10),
-          _row("Service Type", "AB+ Blood Bag"),
-          _row("Amount", "${_amount.toStringAsFixed(0)} EGP"),
+          _row("Blood Type", widget.bloodType),
+          _row("Hospital", widget.hospital),
+          _row("Quantity", "${widget.quantity} bag(s)"),
+          _row(
+            "Receive Date",
+            "${widget.receiveDate.day}/${widget.receiveDate.month}/${widget.receiveDate.year}",
+          ),
+          _row("Amount", "${totalAmount.toStringAsFixed(0)} EGP"),
         ],
       ),
     );
@@ -210,10 +236,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // ======================================================
-  //                       PAYMENT TILE
-  // ======================================================
-
   Widget _paymentTile({
     required String title,
     required String subtitle,
@@ -221,7 +243,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     required PaymentMethod value,
   }) {
     final selected = _selected == value;
-    final primary = Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
       onTap: () {
@@ -234,7 +255,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? primary : Colors.white,
+          color: selected ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 6)],
         ),
@@ -242,7 +263,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             icon,
             const SizedBox(width: 12),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +275,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       color: selected ? Colors.white : Colors.black,
                     ),
                   ),
-
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -266,11 +285,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ],
               ),
             ),
-
             Radio(
               value: value,
               groupValue: _selected,
-              activeColor: selected ? Colors.white : primary,
+              activeColor: Colors.white,
               onChanged: (v) {
                 setState(() {
                   _selected = v!;
@@ -284,11 +302,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // ======================================================
-  //                         CARD FORM
-  // ======================================================
-
-  Widget _cardForm(TextTheme text, Color primary) {
+  Widget _cardForm(TextTheme text) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -305,76 +319,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 15),
 
-          // Card Number
-          Text("Card Number", style: text.bodySmall),
-          const SizedBox(height: 6),
           TextFormField(
             controller: _cardNumber,
             keyboardType: TextInputType.number,
             maxLength: 19,
             onChanged: _formatCardNumber,
-            decoration: _input("●●●● ●●●● ●●●● ●●●●"),
-            validator: (value) {
-              if (value == null || value.isEmpty) return "Enter card number";
-              if (value.replaceAll(" ", "").length != 16)
-                return "Card must be 16 digits";
-              return null;
-            },
+            validator: (value) =>
+                value == null || value.isEmpty ? "Enter card number" : null,
+            decoration: _input("Card Number"),
           ),
+
           const SizedBox(height: 14),
 
           Row(
             children: [
-              // Expiry
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Expiry Date", style: text.bodySmall),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _expiry,
-                      keyboardType: TextInputType.number,
-                      maxLength: 5,
-                      onChanged: _formatExpiry,
-                      decoration: _input("MM/YY"),
-                      validator: (value) {
-                        if (value == null || value.isEmpty)
-                          return "Enter expiry date";
-                        if (!RegExp(
-                          r'^(0[1-9]|1[0-2])\/\d{2}$',
-                        ).hasMatch(value))
-                          return "Invalid format";
-                        return null;
-                      },
-                    ),
-                  ],
+                child: TextFormField(
+                  controller: _expiry,
+                  keyboardType: TextInputType.number,
+                  maxLength: 5,
+                  onChanged: _formatExpiry,
+                  validator: (value) =>
+                      value == null || value.isEmpty ? "Enter expiry" : null,
+                  decoration: _input("Expiry MM/YY"),
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              // CVV
-              SizedBox(
-                width: 110,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("CVV", style: text.bodySmall),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _cvv,
-                      keyboardType: TextInputType.number,
-                      maxLength: 3,
-                      obscureText: true,
-                      decoration: _input("●●●"),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return "Enter CVV";
-                        if (value.length != 3) return "Must be 3 digits";
-                        return null;
-                      },
-                    ),
-                  ],
+              Expanded(
+                child: TextFormField(
+                  controller: _cvv,
+                  keyboardType: TextInputType.number,
+                  maxLength: 3,
+                  obscureText: true,
+                  validator: (value) =>
+                      value == null || value.isEmpty ? "Enter CVV" : null,
+                  decoration: _input("CVV"),
                 ),
               ),
             ],
@@ -392,32 +371,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
   );
 
-  // ======================================================
-  //                        PAY BUTTON
-  // ======================================================
-
-  Widget _payBtn(Color primary, TextTheme text) {
+  Widget _payBtn() {
     return SizedBox(
       height: 56,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: primaryColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
         onPressed: _onPayPressed,
-        child: Text(
+        child: const Text(
           "Pay Now",
-          style: text.bodyLarge!.copyWith(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontSize: 18),
         ),
       ),
     );
   }
-
-  // ======================================================
-  //                        PAY LOGIC
-  // ======================================================
 
   void _onPayPressed() {
     if (!_formKey.currentState!.validate()) return;
@@ -428,37 +399,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ? "VISA"
         : "Mastercard";
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Confirm Payment"),
-        content: Text(
-          "Amount: ${_amount.toStringAsFixed(0)} EGP\nPayment Method: $method",
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoicePage(
+          amount: totalAmount,
+          method: method,
+          orderType: "${widget.bloodType} Blood Bag",
+          bloodType: widget.bloodType,
+          hospital: widget.hospital,
+          quantity: widget.quantity,
+          receiveDate: widget.receiveDate,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx, rootNavigator: true).pop(),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx, rootNavigator: true).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => InvoicePage(
-                    amount: _amount,
-                    method: method,
-                    orderType: "None",
-                  ),
-                ),
-              );
-            },
-            child: const Text("Continue"),
-          ),
-        ],
       ),
     );
   }

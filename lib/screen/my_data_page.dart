@@ -14,10 +14,17 @@ class MyDataScreen extends StatelessWidget {
       backgroundColor: const Color(0xffF5F6FA),
 
       appBar: AppBar(
-        title: const Text("My Data"),
+        backgroundColor: const Color(0xFF00A7B3),
         centerTitle: true,
-        backgroundColor: const Color(0xffF5F6FA),
-        elevation: 0,
+        title: const Text(
+          "My Data",
+          style: TextStyle(
+            fontFamily: "Cairo",
+            fontSize: 29,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
 
       body: Padding(
@@ -39,26 +46,26 @@ class MyDataScreen extends StatelessWidget {
 
               const SizedBox(height: 25),
 
-              buildDataItem("الاسم", name),
-              buildDataItem("الرقم القومي", nationalId),
-              buildDataItem("رقم الهاتف", phone),
-              buildDataItem("البريد الإلكتروني", email),
+              buildDataItem("Name", name),
+              buildDataItem("National ID", nationalId),
+              buildDataItem("Phone Number", phone),
+              buildDataItem("Email Address", email),
 
               const Spacer(),
 
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.logout, color: Colors.red),
-                  SizedBox(width: 8),
                   Text(
-                    "تسجيل الخروج",
+                    "Logout",
                     style: TextStyle(
                       color: Colors.red,
-                      fontSize: 16,
+                      fontSize: 21,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  SizedBox(width: 8),
+                  Icon(Icons.logout, color: Colors.red, size: 26),
                 ],
               ),
             ],

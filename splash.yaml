@@ -1,11 +1,11 @@
 flutter_native_splash:
-  color: "#FFFFFF" ##====================================[REQUIRED]==========
-  color_dark: "#000000" ##================================[REQUIRED]==========
+  #====================================[REQUIRED]================
+  color: "#FFFFFF"
+  color_dark: "#000000"
   image: images/mood.png
   image_dark: images/dark.png
   branding: images/pranding 24.png
   branding_dark: images/pranding 11.png
-
   # branding_ios:          images/pranding 2.png
   # branding_dark_ios:     images/pranding 1.png
 
@@ -38,6 +38,11 @@ flutter_native_splash:
   # but for ios, add this to your flutter main():
   # WidgetsFlutterBinding.ensureInitialized();
   # SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top], );
+dependencies:
+  flutter:
+    sdk: flutter
+  pdf: ^4.8.1
+  printing: ^5.10.5
 
   #! extra note for IOS:
   # If you have changed the name(s) of your info.plist file(s), you can specify the filename(s)

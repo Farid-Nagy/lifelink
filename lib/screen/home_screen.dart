@@ -1,123 +1,156 @@
 import 'package:flutter/material.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:lifelink/screen/blood_type_page.dart';
+import 'package:lifelink/screen/my_data_page.dart';
+import 'package:lifelink/screen/about_page.dart';
+import 'package:lifelink/screen/delivery_page.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int selectedIndex = 1;
+
+  final List<Widget> pages = const [
+    MyDataScreen(), // الشمال
+    HomeContent(), // النص (Home)
+    AboutPage(), // اليمين
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F6FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        centerTitle: false,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "الرئيسية",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
+      appBar: selectedIndex == 1
+          ? AppBar(
+              backgroundColor: const Color(0xFF00A7B3),
+              centerTitle: true,
+              title: const Text(
+                "Home",
+                style: TextStyle(
+                  fontFamily: "Cairo",
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : null,
+      body: pages[selectedIndex],
+      bottomNavigationBar: CurvedNavigationBar(
+        backgroundColor: const Color(0xffF5F6FA),
+        color: const Color(0xFF00A7B3),
+        animationDuration: const Duration(milliseconds: 300),
+        index: selectedIndex,
+        items: const [
+          Icon(Icons.person, size: 30, color: Colors.white),
+          Icon(Icons.home, size: 30, color: Colors.white),
+          Icon(Icons.info_outline, size: 30, color: Colors.white),
+        ],
+        onTap: (index) => setState(() => selectedIndex = index),
+      ),
+    );
+  }
+}
+
+/// محتوى الصفحة الرئيسية
+class HomeContent extends StatelessWidget {
+  const HomeContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: topCard(
+                  context,
+                  Icons.local_shipping,
+                  "Delivery",
+                  const DeliveryPage(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: topCard(
+                  context,
+                  Icons.bloodtype,
+                  "Blood Bags Booking",
+                  const BloodTypePage(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xff1FA5A9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                "Who Donates to Whom?",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            Text("Home", style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: [
-            /// الكروت اللي فوق
-            Row(
-              children: [
-                Expanded(
-                  child: topCard(context, Icons.local_shipping, "توصيل", null),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: ListView(
+              children: const [
+                BloodRow("O-", "Donates to everyone", "Receives from O-"),
+                BloodRow(
+                  "O+",
+                  "Donates to O+, A+, B+, AB+",
+                  "Receives from O+, O-",
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: topCard(
-                    context,
-                    Icons.bloodtype,
-                    "حجز أكياس دم",
-                    const BloodTypePage(), // ده اللي هيفتح لما تدوسي على المربع
-                  ),
+                BloodRow(
+                  "A-",
+                  "Donates to A-, A+, AB-, AB+",
+                  "Receives from A-, O-",
                 ),
+                BloodRow(
+                  "A+",
+                  "Donates to A+, AB+",
+                  "Receives from A+, A-, O-",
+                ),
+                BloodRow(
+                  "B-",
+                  "Donates to B-, B+, AB-, AB+",
+                  "Receives from B-, O-",
+                ),
+                BloodRow(
+                  "B+",
+                  "Donates to B+, AB+",
+                  "Receives from B+, B-, O-",
+                ),
+                BloodRow(
+                  "AB-",
+                  "Donates to AB-, AB+",
+                  "Receives from everyone",
+                ),
+                BloodRow("AB+", "Donates to AB+ only", "Universal receiver"),
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            /// عنوان الجدول
-            Container(
-              padding: const EdgeInsets.all(12),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xff1FA5A9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text(
-                  "من يتبرع لمن؟",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            /// الليست
-            Expanded(
-              child: ListView(
-                children: const [
-                  BloodRow("O-", "يتبرع للجميع", "يستقبل من O-"),
-                  BloodRow(
-                    "O+",
-                    "يتبرع لـ O+, A+, B+, AB+",
-                    "يستقبل من O+, O-",
-                  ),
-                  BloodRow(
-                    "A-",
-                    "يتبرع لـ A-, A+, AB-, AB+",
-                    "يستقبل من A-, O-",
-                  ),
-                  BloodRow("A+", "يتبرع لـ A+, AB+", "يستقبل من A+, A-, O-"),
-                  BloodRow(
-                    "B-",
-                    "يتبرع لـ B-, B+, AB-, AB+",
-                    "يستقبل من B-, O-",
-                  ),
-                  BloodRow("B+", "يتبرع لـ B+, AB+", "يتبرع من B+, B-, O-"),
-                  BloodRow("AB-", "يتبرع لـ AB-, AB+", "يستقبل من الجميع"),
-                  BloodRow("AB+", "يتبرع لـ AB+ فقط", "المستقبل العام"),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xff1FA5A9),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: ""),
+          ),
         ],
       ),
     );
   }
 
-  /// الكارد اللي فوق (لينك)
   Widget topCard(
     BuildContext context,
     IconData icon,
@@ -128,12 +161,10 @@ class HomeScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       onTap: navigateTo == null
           ? null
-          : () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => navigateTo),
-              );
-            },
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => navigateTo),
+            ),
       child: Container(
         height: 110,
         decoration: BoxDecoration(
@@ -169,7 +200,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// الصف بتاع فصيلة الدم
 class BloodRow extends StatelessWidget {
   final String type;
   final String donate;
@@ -188,7 +218,6 @@ class BloodRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          /// الدائرة
           Container(
             width: 45,
             height: 45,
@@ -206,10 +235,7 @@ class BloodRow extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
-          /// النصوص
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
