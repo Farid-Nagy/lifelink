@@ -8,6 +8,9 @@ class PayNow extends StatelessWidget {
   final String hospital;
   final int quantity;
   final DateTime receiveDate;
+  final String orderType;
+  final String? deliveryAddress;
+  final double? deliveryFee;
 
   const PayNow({
     super.key,
@@ -15,6 +18,9 @@ class PayNow extends StatelessWidget {
     required this.hospital,
     required this.quantity,
     required this.receiveDate,
+    required this.orderType,
+    this.deliveryAddress,
+    this.deliveryFee,
   });
 
   @override
@@ -35,6 +41,9 @@ class PayNow extends StatelessWidget {
           hospital: hospital,
           quantity: quantity,
           receiveDate: receiveDate,
+          orderType: orderType,
+          deliveryAddress: deliveryAddress,
+          deliveryFee: deliveryFee,
         ),
       ),
     );
@@ -46,6 +55,9 @@ class PaymentScreen extends StatefulWidget {
   final String hospital;
   final int quantity;
   final DateTime receiveDate;
+  final String orderType;
+  final String? deliveryAddress;
+  final double? deliveryFee;
 
   const PaymentScreen({
     super.key,
@@ -53,6 +65,9 @@ class PaymentScreen extends StatefulWidget {
     required this.hospital,
     required this.quantity,
     required this.receiveDate,
+    required this.orderType,
+    this.deliveryAddress,
+    this.deliveryFee,
   });
 
   @override
@@ -71,45 +86,81 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _expiry = TextEditingController();
   final TextEditingController _cvv = TextEditingController();
 
-  double get totalAmount => _amountPerBag * widget.quantity;
-
-  void _formatCardNumber(String value) {
-    value = value.replaceAll(" ", "");
-    String newValue = "";
-    for (int i = 0; i < value.length; i++) {
-      newValue += value[i];
-      if ((i + 1) % 4 == 0 && i != value.length - 1) newValue += " ";
+  double get totalAmount {
+    double total = _amountPerBag * widget.quantity;
+    if (widget.deliveryFee != null) {
+      total += widget.deliveryFee!;
     }
-    _cardNumber.value = TextEditingValue(
-      text: newValue,
-      selection: TextSelection.collapsed(offset: newValue.length),
-    );
+    return total;
   }
 
-  void _formatExpiry(String value) {
-    value = value.replaceAll("/", "");
-    if (value.length >= 3) {
-      value = value.substring(0, 2) + "/" + value.substring(2);
-    }
-    _expiry.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
-    );
-  }
-
-  void _clearForm() {
-    _cardNumber.clear();
-    _expiry.clear();
-    _cvv.clear();
+  @override
+  void initState() {
+    super.initState();
+    // إضافة مستمعين للتنسيق التلقائي
+    _cardNumber.addListener(_formatCardNumber);
+    _expiry.addListener(_formatExpiryDate);
   }
 
   @override
   void dispose() {
-    _clearForm();
+    _cardNumber.removeListener(_formatCardNumber);
+    _expiry.removeListener(_formatExpiryDate);
     _cardNumber.dispose();
     _expiry.dispose();
     _cvv.dispose();
     super.dispose();
+  }
+
+  // دالة تنسيق رقم البطاقة (إضافة مسافة كل 4 أرقام)
+  void _formatCardNumber() {
+    String text = _cardNumber.text.replaceAll(RegExp(r'\s+\b|\b\s'), '');
+    if (text.isEmpty) return;
+
+    String formatted = '';
+    for (int i = 0; i < text.length; i++) {
+      if (i > 0 && i % 4 == 0) {
+        formatted += ' ';
+      }
+      formatted += text[i];
+    }
+
+    if (_cardNumber.text != formatted) {
+      _cardNumber.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  }
+
+  // دالة تنسيق تاريخ الانتهاء (إضافة / بعد الشهر)
+  void _formatExpiryDate() {
+    String text = _expiry.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (text.isEmpty) return;
+
+    if (text.length >= 3) {
+      String month = text.substring(0, 2);
+      String year = text.substring(2, text.length > 4 ? 4 : text.length);
+
+      // التأكد من أن الشهر بين 01 و 12
+      if (month.isNotEmpty) {
+        int monthInt = int.parse(month);
+        if (monthInt > 12) {
+          month = '12';
+        } else if (monthInt < 1 && month.length == 2) {
+          month = '01';
+        }
+      }
+
+      String formatted = text.length >= 2 ? '$month/$year' : text;
+
+      if (_expiry.text != formatted) {
+        _expiry.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
   }
 
   @override
@@ -140,6 +191,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ],
         ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -147,6 +199,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text("Payment", style: text.displayMedium),
             const SizedBox(height: 15),
+
             _summaryCard(text),
             const SizedBox(height: 25),
 
@@ -178,7 +231,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
             const SizedBox(height: 25),
 
-            /// 🔥 التعديل هنا (Telda أصبح يستخدم نفس الكارد فورم)
             Form(key: _formKey, child: _cardForm(text)),
 
             const SizedBox(height: 25),
@@ -210,14 +262,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
             style: text.titleMedium!.copyWith(color: primaryColor),
           ),
           const SizedBox(height: 10),
+
+          _row("Order Type", widget.orderType),
           _row("Blood Type", widget.bloodType),
           _row("Hospital", widget.hospital),
           _row("Quantity", "${widget.quantity} bag(s)"),
+          if (widget.deliveryAddress != null)
+            _row("Delivery Address", widget.deliveryAddress!),
           _row(
             "Receive Date",
             "${widget.receiveDate.day}/${widget.receiveDate.month}/${widget.receiveDate.year}",
           ),
-          _row("Amount", "${totalAmount.toStringAsFixed(0)} EGP"),
+          if (widget.deliveryFee != null)
+            _row("Delivery Fee", "${widget.deliveryFee} EGP"),
+          _row("Total Amount", "${totalAmount.toStringAsFixed(0)} EGP"),
         ],
       ),
     );
@@ -248,7 +306,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       onTap: () {
         setState(() {
           _selected = value;
-          _clearForm();
+          _cardNumber.clear();
+          _expiry.clear();
+          _cvv.clear();
         });
       },
       child: AnimatedContainer(
@@ -292,7 +352,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               onChanged: (v) {
                 setState(() {
                   _selected = v!;
-                  _clearForm();
+                  _cardNumber.clear();
+                  _expiry.clear();
+                  _cvv.clear();
                 });
               },
             ),
@@ -319,41 +381,65 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 15),
 
+          // حقل رقم البطاقة مع التنسيق التلقائي
           TextFormField(
             controller: _cardNumber,
             keyboardType: TextInputType.number,
             maxLength: 19,
-            onChanged: _formatCardNumber,
-            validator: (value) =>
-                value == null || value.isEmpty ? "Enter card number" : null,
-            decoration: _input("Card Number"),
+            decoration: _input("Card Number (xxxx xxxx xxxx xxxx)"),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter card number';
+              }
+              String numbers = value.replaceAll(' ', '');
+              if (numbers.length < 16) {
+                return 'Card number must be 16 digits';
+              }
+              return null;
+            },
           ),
-
           const SizedBox(height: 14),
 
           Row(
             children: [
+              // حقل تاريخ الانتهاء مع التنسيق التلقائي
               Expanded(
                 child: TextFormField(
                   controller: _expiry,
                   keyboardType: TextInputType.number,
-                  maxLength: 5,
-                  onChanged: _formatExpiry,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "Enter expiry" : null,
-                  decoration: _input("Expiry MM/YY"),
+                  maxLength: 5, // MM/YY = 5 أحرف
+                  decoration: _input("Expiry (MM/YY)"),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required';
+                    }
+                    String numbers = value.replaceAll('/', '');
+                    if (numbers.length < 4) {
+                      return 'Invalid date';
+                    }
+                    return null;
+                  },
                 ),
               ),
               const SizedBox(width: 12),
+
+              // حقل CVV
               Expanded(
                 child: TextFormField(
                   controller: _cvv,
                   keyboardType: TextInputType.number,
                   maxLength: 3,
                   obscureText: true,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "Enter CVV" : null,
                   decoration: _input("CVV"),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required';
+                    }
+                    if (value.length < 3) {
+                      return '3 digits';
+                    }
+                    return null;
+                  },
                 ),
               ),
             ],
@@ -369,6 +455,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     filled: true,
     fillColor: const Color(0xFFF8F8F8),
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    errorStyle: const TextStyle(fontSize: 12),
   );
 
   Widget _payBtn() {
@@ -391,27 +478,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _onPayPressed() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState!.validate()) {
+      final method = _selected == PaymentMethod.telda
+          ? "Telda"
+          : _selected == PaymentMethod.visa
+          ? "VISA"
+          : "Mastercard";
 
-    final method = _selected == PaymentMethod.telda
-        ? "Telda"
-        : _selected == PaymentMethod.visa
-        ? "VISA"
-        : "Mastercard";
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InvoicePage(
-          amount: totalAmount,
-          method: method,
-          orderType: "${widget.bloodType} Blood Bag",
-          bloodType: widget.bloodType,
-          hospital: widget.hospital,
-          quantity: widget.quantity,
-          receiveDate: widget.receiveDate,
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePage(
+            amount: totalAmount,
+            method: method,
+            orderType: widget.orderType,
+            bloodType: widget.bloodType,
+            hospital: widget.hospital,
+            quantity: widget.quantity,
+            receiveDate: widget.receiveDate,
+            deliveryAddress: widget.deliveryAddress,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }

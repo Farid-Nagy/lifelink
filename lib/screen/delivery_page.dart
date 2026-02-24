@@ -81,6 +81,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
     );
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: primaryColor,
         centerTitle: true,
@@ -94,11 +95,12 @@ class _DeliveryPageState extends State<DeliveryPage> {
           ),
         ),
       ),
-      body: Padding(
+
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Blood Type Selection
+            /// BLOOD GRID
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -111,6 +113,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
               itemBuilder: (context, index) {
                 final type = bloodTypes[index];
                 final isSelected = selectedBlood == type;
+
                 return InkWell(
                   onTap: () {
                     setState(() {
@@ -148,7 +151,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
             const SizedBox(height: 20),
 
-            // Hospital + Quantity Row
+            /// HOSPITAL + QTY
             Row(
               children: [
                 Expanded(
@@ -178,7 +181,9 @@ class _DeliveryPageState extends State<DeliveryPage> {
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   flex: 2,
                   child: Container(
@@ -216,7 +221,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
             const SizedBox(height: 16),
 
-            // Hospital Name
+            /// Hospital Name
             Container(
               decoration: boxDecoration(),
               child: TextField(
@@ -231,7 +236,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
             const SizedBox(height: 12),
 
-            // Delivery Address
+            /// Delivery Address
             Container(
               decoration: boxDecoration(),
               child: TextField(
@@ -247,7 +252,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
             const SizedBox(height: 16),
 
-            // Delivery Date
+            /// DATE
             InkWell(
               onTap: pickDate,
               child: Container(
@@ -265,11 +270,11 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
             const SizedBox(height: 16),
 
-            // Delivery Fee
+            /// Delivery Fee
             if (showDeliveryFee)
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(12),
+                width: double.infinity,
                 decoration: boxDecoration(),
                 child: Text(
                   'Delivery Fee: EGP $deliveryFee',
@@ -280,9 +285,9 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 ),
               ),
 
-            const Spacer(),
+            const SizedBox(height: 20),
 
-            // Next Button
+            /// NEXT BUTTON
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -296,7 +301,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
                   elevation: 6,
                 ),
                 onPressed:
-                    selectedHospital != null &&
+                    selectedBlood != null &&
+                        selectedHospital != null &&
                         receiveDate != null &&
                         hospitalNameController.text.isNotEmpty &&
                         addressController.text.isNotEmpty
@@ -305,10 +311,13 @@ class _DeliveryPageState extends State<DeliveryPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => PayNow(
-                              bloodType: selectedBlood ?? "O+",
+                              bloodType: selectedBlood!,
                               hospital: hospitalNameController.text,
                               quantity: count,
                               receiveDate: receiveDate!,
+                              orderType: "Delivery",
+                              deliveryAddress: addressController.text,
+                              deliveryFee: deliveryFee,
                             ),
                           ),
                         );
@@ -320,6 +329,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
                 ),
               ),
             ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),

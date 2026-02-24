@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 //import 'package:lifelink/auth.dart';
 import 'package:lifelink/screen/login_screen.dart';
 import 'package:lifelink/screen/signup_screen.dart';
-import 'package:lifelink/screen/Pay_Now.dart';
 import 'package:lifelink/screen/admin.dart';
 import 'package:lifelink/screen/blood_Inventory.dart';
 import 'package:lifelink/screen/my_data_page.dart';
