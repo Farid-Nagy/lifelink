@@ -86,6 +86,61 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _expiry = TextEditingController();
   final TextEditingController _cvv = TextEditingController();
 
+  // إضافة متغيرات للأرقام التسلسلية
+  late String _invoiceNumber;
+  late String _transactionNumber;
+
+  // قائمة البطاقات المسموح بها مع بياناتها الكاملة
+  final List<Map<String, String>> _allowedCards = [
+    // بطاقات VISA
+    {
+      'number': '1234567812345678',
+      'expiry': '12/25',
+      'cvv': '123',
+      'type': 'VISA',
+    },
+    {
+      'number': '1111222233334444',
+      'expiry': '03/26',
+      'cvv': '789',
+      'type': 'VISA',
+    },
+
+    // بطاقات Mastercard
+    {
+      'number': '8765432187654321',
+      'expiry': '08/24',
+      'cvv': '456',
+      'type': 'Mastercard',
+    },
+    {
+      'number': '5555666677778888',
+      'expiry': '11/25',
+      'cvv': '321',
+      'type': 'Mastercard',
+    },
+
+    // بطاقات Telda
+    {
+      'number': '9876987698769876',
+      'expiry': '09/26',
+      'cvv': '987',
+      'type': 'Telda',
+    },
+    {
+      'number': '5432543254325432',
+      'expiry': '05/25',
+      'cvv': '654',
+      'type': 'Telda',
+    },
+    {
+      'number': '9999888877776666',
+      'expiry': '12/27',
+      'cvv': '147',
+      'type': 'Telda',
+    },
+  ];
+
   double get totalAmount {
     double total = _amountPerBag * widget.quantity;
     if (widget.deliveryFee != null) {
@@ -97,9 +152,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
+    // إنشاء الأرقام التسلسلية عند فتح الصفحة
+    _generateInvoiceNumbers();
+
     // إضافة مستمعين للتنسيق التلقائي
     _cardNumber.addListener(_formatCardNumber);
     _expiry.addListener(_formatExpiryDate);
+  }
+
+  // دالة إنشاء الأرقام التسلسلية
+  void _generateInvoiceNumbers() {
+    _invoiceNumber = "#INV-${DateTime.now().millisecondsSinceEpoch}";
+    _transactionNumber =
+        "OPR-${DateTime.now().second}${DateTime.now().millisecond}";
   }
 
   @override
@@ -161,6 +226,81 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
       }
     }
+  }
+
+  // دالة التحقق من رقم البطاقة
+  String? _validateCardNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter card number';
+    }
+
+    String numbers = value.replaceAll(' ', '');
+
+    if (numbers.length != 16) {
+      return 'Card number must be 16 digits';
+    }
+
+    // التحقق من وجود رقم البطاقة في القائمة
+    bool cardExists = _allowedCards.any((card) => card['number'] == numbers);
+
+    if (!cardExists) {
+      return 'This card is not authorized for payment';
+    }
+
+    return null;
+  }
+
+  // دالة التحقق من تاريخ الانتهاء
+  String? _validateExpiryDate(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Required';
+    }
+
+    String numbers = value.replaceAll('/', '');
+    if (numbers.length < 4) {
+      return 'Invalid date';
+    }
+
+    // التحقق من تطابق التاريخ مع البطاقة
+    String cardNumber = _cardNumber.text.replaceAll(' ', '');
+    if (cardNumber.isNotEmpty) {
+      var card = _allowedCards.firstWhere(
+        (c) => c['number'] == cardNumber,
+        orElse: () => {},
+      );
+
+      if (card.isNotEmpty && card['expiry'] != value) {
+        return 'Expiry date does not match this card';
+      }
+    }
+
+    return null;
+  }
+
+  // دالة التحقق من الرقم السري CVV
+  String? _validateCVV(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Required';
+    }
+
+    if (value.length < 3) {
+      return '3 digits required';
+    }
+
+    // التحقق من تطابق الـ CVV مع البطاقة
+    String cardNumber = _cardNumber.text.replaceAll(' ', '');
+    if (cardNumber.isNotEmpty) {
+      var card = _allowedCards.firstWhere(
+        (c) => c['number'] == cardNumber,
+        orElse: () => {},
+      );
+
+      if (card.isNotEmpty && card['cvv'] != value) {
+        return 'CVV does not match this card';
+      }
+    }
+
+    return null;
   }
 
   @override
@@ -263,6 +403,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 10),
 
+          // إضافة الرقم التسلسلي للفاتورة في ملخص العمليات
+          _row("Invoice Number", _invoiceNumber),
+          _row("Transaction Number", _transactionNumber),
+          const Divider(height: 20, thickness: 1),
           _row("Order Type", widget.orderType),
           _row("Blood Type", widget.bloodType),
           _row("Hospital", widget.hospital),
@@ -275,6 +419,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           if (widget.deliveryFee != null)
             _row("Delivery Fee", "${widget.deliveryFee} EGP"),
+          const Divider(height: 20, thickness: 1),
           _row("Total Amount", "${totalAmount.toStringAsFixed(0)} EGP"),
         ],
       ),
@@ -287,8 +432,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(left),
-          Text(right, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(left, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            right,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
     );
@@ -381,23 +532,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 15),
 
-          // حقل رقم البطاقة مع التنسيق التلقائي
+          // حقل رقم البطاقة مع التنسيق التلقائي والتحقق من القائمة المسموح بها
           TextFormField(
             controller: _cardNumber,
             keyboardType: TextInputType.number,
             maxLength: 19,
             decoration: _input("Card Number (xxxx xxxx xxxx xxxx)"),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter card number';
-              }
-              String numbers = value.replaceAll(' ', '');
-              if (numbers.length < 16) {
-                return 'Card number must be 16 digits';
-              }
-              return null;
+            validator: _validateCardNumber,
+            onChanged: (value) {
+              // إعادة التحقق من الحقول الأخرى عند تغيير رقم البطاقة
+              _expiry.text = '';
+              _cvv.text = '';
             },
           ),
+
           const SizedBox(height: 14),
 
           Row(
@@ -407,18 +555,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: TextFormField(
                   controller: _expiry,
                   keyboardType: TextInputType.number,
-                  maxLength: 5, // MM/YY = 5 أحرف
+                  maxLength: 5,
                   decoration: _input("Expiry (MM/YY)"),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Required';
-                    }
-                    String numbers = value.replaceAll('/', '');
-                    if (numbers.length < 4) {
-                      return 'Invalid date';
-                    }
-                    return null;
-                  },
+                  validator: _validateExpiryDate,
                 ),
               ),
               const SizedBox(width: 12),
@@ -431,15 +570,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   maxLength: 3,
                   obscureText: true,
                   decoration: _input("CVV"),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Required';
-                    }
-                    if (value.length < 3) {
-                      return '3 digits';
-                    }
-                    return null;
-                  },
+                  validator: _validateCVV,
                 ),
               ),
             ],
@@ -497,6 +628,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             quantity: widget.quantity,
             receiveDate: widget.receiveDate,
             deliveryAddress: widget.deliveryAddress,
+            invoiceNumber: _invoiceNumber,
+            transactionNumber: _transactionNumber,
           ),
         ),
       );

@@ -13,6 +13,10 @@ class InvoicePage extends StatelessWidget {
   final String? deliveryPhone;
   final String? notes;
 
+  // إضافة حقول جديدة للرقم التسلسلي
+  final String invoiceNumber;
+  final String transactionNumber;
+
   const InvoicePage({
     super.key,
     required this.amount,
@@ -22,6 +26,8 @@ class InvoicePage extends StatelessWidget {
     required this.hospital,
     required this.quantity,
     required this.receiveDate,
+    required this.invoiceNumber, // مطلوب الآن
+    required this.transactionNumber, // مطلوب الآن
     this.deliveryAddress,
     this.deliveryName,
     this.deliveryPhone,
@@ -33,9 +39,6 @@ class InvoicePage extends StatelessWidget {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
-    final invoiceNumber = "#INV-${DateTime.now().millisecondsSinceEpoch}";
-    final transactionNumber =
-        "OPR-${DateTime.now().second}${DateTime.now().millisecond}";
     final date = "${receiveDate.day}/${receiveDate.month}/${receiveDate.year}";
     final time = "${DateTime.now().hour}:${DateTime.now().minute}";
 
@@ -90,7 +93,7 @@ class InvoicePage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // تفاصيل الفاتورة
+            // تفاصيل الفاتورة - الآن تستخدم القيم المستلمة
             _invoiceItem("Invoice Number", invoiceNumber),
             _invoiceItem("Transaction Number", transactionNumber),
             _invoiceItem("Date", date),
