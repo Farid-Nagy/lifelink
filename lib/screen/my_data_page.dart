@@ -1,18 +1,56 @@
 import 'package:flutter/material.dart';
-
-class MyDataScreen extends StatelessWidget {
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lifelink/screen/login_screen.dart';
+//.
+class MyDataScreen extends StatefulWidget {
   const MyDataScreen({super.key});
+//.
+  @override
+  State<MyDataScreen> createState() => _MyDataScreenState();
+}
+class _MyDataScreenState extends State<MyDataScreen> {
+String? name;
+  String? nationalId;
+  String? phone;
+  String? email;
 
   @override
-  Widget build(BuildContext context) {
-    String? name;
-    String? nationalId;
-    String? phone;
-    String? email;
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+ bool isLoading = true;
+ Future<void> fetchUserData() async {
+  final user = FirebaseAuth.instance.currentUser;
 
+  if (user != null) {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    setState(() {
+      if (doc.exists) {
+        name = doc['username'];
+        nationalId = doc['nationalid'];
+        phone = doc['phone'];
+        email = user.email;
+      }
+      isLoading = false;
+    });
+  } else {
+    setState(() {
+      isLoading = false;
+    });
+  }
+}
+//.
+  @override//.
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF5F6FA),
-
+      
       appBar: AppBar(
         backgroundColor: const Color(0xFF00A7B3),
         centerTitle: true,
@@ -26,8 +64,15 @@ class MyDataScreen extends StatelessWidget {
           ),
         ),
       ),
-
-      body: Padding(
+      //.
+      body: isLoading
+    ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF00A7B3),
+        ),
+      )
+      
+       :Padding(
         padding: const EdgeInsets.all(16),
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -35,7 +80,7 @@ class MyDataScreen extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(25),
           ),
-
+          
           child: Column(
             children: [
               const CircleAvatar(
@@ -50,10 +95,17 @@ class MyDataScreen extends StatelessWidget {
               buildDataItem("National ID", nationalId),
               buildDataItem("Phone Number", phone),
               buildDataItem("Email Address", email),
-
+              
               const Spacer(),
-
-              const Row(
+InkWell(
+  onTap: () async {
+    await FirebaseAuth.instance.signOut();
+  Navigator.of(context).pushReplacement(
+  MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+    },
+              //.
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
@@ -68,13 +120,14 @@ class MyDataScreen extends StatelessWidget {
                   Icon(Icons.logout, color: Colors.red, size: 26),
                 ],
               ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
+//.
   Widget buildDataItem(String title, String? value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
