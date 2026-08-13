@@ -1,78 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lifelink/internet_service.dart';
 import 'invoice_page.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 const Color primaryColor = Color(0xFF00A7B3);
 
-/// ==========================
-/// Network Wrapper
-/// ==========================
-class NetworkWrapper extends StatefulWidget {
-  final Widget child;
-  const NetworkWrapper({super.key, required this.child});
-
-  @override
-  State<NetworkWrapper> createState() => _NetworkWrapperState();
-}
-
-class _NetworkWrapperState extends State<NetworkWrapper> {
-  bool hasInternet = true;
-  StreamSubscription? connectivitySubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkInternet();
-
-    connectivitySubscription = Connectivity().onConnectivityChanged.listen((
-      event,
-    ) async {
-      bool isConnected = await InternetConnectionChecker().hasConnection;
-
-      if (isConnected != hasInternet) {
-        hasInternet = isConnected;
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                hasInternet
-                    ? "✅ Internet connection restored"
-                    : "❌ No Internet Connection",
-              ),
-              backgroundColor: hasInternet ? Colors.green : Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    });
-  }
-
-  Future<void> _checkInternet() async {
-    hasInternet = await InternetConnectionChecker().hasConnection;
-  }
-
-  @override
-  void dispose() {
-    connectivitySubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
-}
-
-/// ==========================
-/// PayNow Page
-/// ==========================
 class PayNow extends StatelessWidget {
   final String bloodType;
   final String hospital;
@@ -95,34 +25,30 @@ class PayNow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NetworkWrapper(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.light,
-          fontFamily: 'Tajawal',
-          scaffoldBackgroundColor: const Color(0xFFF7F7F8),
-          colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
-        ),
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: PaymentScreen(
-            bloodType: bloodType,
-            hospital: hospital,
-            quantity: quantity,
-            receiveDate: receiveDate,
-            orderType: orderType,
-            deliveryAddress: deliveryAddress,
-            deliveryFee: deliveryFee,
-          ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        fontFamily: 'Tajawal',
+        scaffoldBackgroundColor: const Color(0xFFF7F7F8),
+        colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
+      ),
+      home: Directionality(
+        textDirection: TextDirection.ltr,
+        child: PaymentScreen(
+          bloodType: bloodType,
+          hospital: hospital,
+          quantity: quantity,
+          receiveDate: receiveDate,
+          orderType: orderType,
+          deliveryAddress: deliveryAddress,
+          deliveryFee: deliveryFee,
         ),
       ),
     );
   }
 }
-
-enum PaymentMethod { telda, visa, mastercard }
 
 class PaymentScreen extends StatefulWidget {
   final String bloodType;
@@ -148,44 +74,11 @@ class PaymentScreen extends StatefulWidget {
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
+enum PaymentMethod { telda, visa, mastercard }
+
 class _PaymentScreenState extends State<PaymentScreen> {
-  // 🔥🔥🔥 الإضافات الجديدة فقط هنا 🔥🔥🔥
-
-  Future<void> _deductFromInventory() async {
-    DocumentReference docRef = FirebaseFirestore.instance
-        .collection('blood_inventory')
-        .doc(widget.bloodType);
-
-    await docRef.update({
-      'hospitals.${widget.hospital.toLowerCase()}': FieldValue.increment(
-        -widget.quantity,
-      ),
-    });
-  }
-
-  Future<void> _saveOrder(String paymentMethod) async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    await FirebaseFirestore.instance.collection('orders').add({
-      'userId': user?.uid,
-      'userEmail': user?.email,
-      'invoiceNumber': _invoiceNumber,
-      'transactionNumber': _transactionNumber,
-      'orderType': widget.orderType,
-      'bloodType': widget.bloodType,
-      'hospital': widget.hospital,
-      'quantity': widget.quantity,
-      'receiveDate': widget.receiveDate,
-      'deliveryAddress': widget.deliveryAddress,
-      'deliveryFee': widget.deliveryFee,
-      'totalAmount': totalAmount,
-      'paymentMethod': paymentMethod,
-      'status': 'completed',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
   PaymentMethod _selected = PaymentMethod.telda;
+
   final double _amountPerBag = 200.0;
   final _formKey = GlobalKey<FormState>();
 
@@ -410,6 +303,89 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return null;
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 1,
+        backgroundColor: primaryColor,
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(Icons.bloodtype, color: primaryColor),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              "Lifelink",
+              style: text.titleLarge!.copyWith(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text("Payment", style: text.displayMedium),
+            const SizedBox(height: 15),
+
+            _summaryCard(text),
+            const SizedBox(height: 25),
+
+            Text("Payment Method", style: text.titleMedium),
+            const SizedBox(height: 10),
+
+            _paymentTile(
+              title: "Telda",
+              subtitle: "Fast & secure",
+              icon: Image.asset("images/01.png", width: 55),
+              value: PaymentMethod.telda,
+            ),
+            const SizedBox(height: 10),
+
+            _paymentTile(
+              title: "VISA",
+              subtitle: "Credit / Debit Card",
+              icon: Image.asset("images/03.png", width: 55),
+              value: PaymentMethod.visa,
+            ),
+            const SizedBox(height: 10),
+
+            _paymentTile(
+              title: "Mastercard",
+              subtitle: "Credit / Debit Card",
+              icon: Image.asset("images/02.png", width: 55),
+              value: PaymentMethod.mastercard,
+            ),
+
+            const SizedBox(height: 25),
+
+            Form(key: _formKey, child: _cardForm(text)),
+
+            const SizedBox(height: 25),
+            _payBtn(),
+            const SizedBox(height: 20),
+
+            Center(
+              child: Text("All rights reserved 2026", style: text.bodySmall),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _summaryCard(TextTheme text) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -632,21 +608,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  /// تحقق من الإنترنت قبل الدفع
-  void _onPayPressed() async {
-    bool hasInternet = await InternetService.hasInternet();
-
-    if (!hasInternet) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("❌ No Internet Connection"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
+  void _onPayPressed() {
     if (_formKey.currentState!.validate()) {
       final method = _selected == PaymentMethod.telda
           ? "Telda"
@@ -654,122 +616,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ? "VISA"
           : "Mastercard";
 
-      try {
-        // 🔥 خصم من المخزون
-        await _deductFromInventory();
-
-        // 🔥 حفظ الطلب مرة واحدة فقط
-        await _saveOrder(method);
-
-        // 🔥 فتح صفحة الفاتورة بعد الحفظ
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => InvoicePage(
-              amount: totalAmount,
-              method: method,
-              orderType: widget.orderType,
-              bloodType: widget.bloodType,
-              hospital: widget.hospital,
-              quantity: widget.quantity,
-              receiveDate: widget.receiveDate,
-              deliveryAddress: widget.deliveryAddress,
-              invoiceNumber: _invoiceNumber,
-              transactionNumber: _transactionNumber,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePage(
+            amount: totalAmount,
+            method: method,
+            orderType: widget.orderType,
+            bloodType: widget.bloodType,
+            hospital: widget.hospital,
+            quantity: widget.quantity,
+            receiveDate: widget.receiveDate,
+            deliveryAddress: widget.deliveryAddress,
+            invoiceNumber: _invoiceNumber,
+            transactionNumber: _transactionNumber,
           ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("❌ Error processing order: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+        ),
+      );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 1,
-        backgroundColor: primaryColor,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(Icons.bloodtype, color: primaryColor),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              "Lifelink",
-              style: text.titleLarge!.copyWith(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text("Payment", style: text.displayMedium),
-            const SizedBox(height: 15),
-
-            _summaryCard(text),
-            const SizedBox(height: 25),
-
-            Text("Payment Method", style: text.titleMedium),
-            const SizedBox(height: 10),
-
-            _paymentTile(
-              title: "Telda",
-              subtitle: "Fast & secure",
-              icon: Image.asset("images/01.png", width: 55),
-              value: PaymentMethod.telda,
-            ),
-            const SizedBox(height: 10),
-
-            _paymentTile(
-              title: "VISA",
-              subtitle: "Credit / Debit Card",
-              icon: Image.asset("images/03.png", width: 55),
-              value: PaymentMethod.visa,
-            ),
-            const SizedBox(height: 10),
-
-            _paymentTile(
-              title: "Mastercard",
-              subtitle: "Credit / Debit Card",
-              icon: Image.asset("images/02.png", width: 55),
-              value: PaymentMethod.mastercard,
-            ),
-
-            const SizedBox(height: 25),
-
-            Form(key: _formKey, child: _cardForm(text)),
-
-            const SizedBox(height: 25),
-            _payBtn(),
-            const SizedBox(height: 20),
-
-            Center(
-              child: Text("All rights reserved 2026", style: text.bodySmall),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

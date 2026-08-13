@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -9,25 +8,27 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
+  // بيانات تجريبية
+  int usersCount = 720; // عدد المستخدمين
+  int hospitalsCount = 90; // عدد المستشفيات
+  int bagsAvailable = 450; // المخزون
+  int bagsReserved = 320; // المحجوز
+  int bagsToDeliver = 100; // سيتم التوصيل
+  int bagsDelivered = 280; // تم التوصيل
 
-  // الصفحة الحالية
-  final String currentRoute = "adminHome";
-
-  // بيانات تجريبية للإحصائيات
-  int usersCount = 720;
-  int hospitalsCount = 90;
-  int bagsAvailable = 450;
-  int bagsReserved = 320;
-  int bagsToDeliver = 100;
-  int bagsDelivered = 280;
-
-  void _navigateAndCloseDrawer(String routeName) {
-    Navigator.of(context).pop();
+  void _navigateAndCloseDialog(BuildContext context, String routeName) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
     Navigator.of(context).pushNamed(routeName);
   }
 
   Widget _buildDashboardCard(
-      String title, int count, IconData icon, Color color) {
+    String title,
+    int count,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -40,8 +41,7 @@ class _AdminPageState extends State<AdminPage> {
             const SizedBox(height: 16),
             Text(
               "$count",
-              style: const TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -55,22 +55,17 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  Future<void> _logout() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pushReplacementNamed("loginScreen");
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("Admin Home"),
+        title: const Text("   Admin Home   "),
         backgroundColor: const Color(0xFF00A7B3),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_open, color: Colors.white, size: 30),
+            icon: Icon(Icons.menu_open, color: Colors.white, size: 30),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -82,128 +77,63 @@ class _AdminPageState extends State<AdminPage> {
         ),
       ),
 
-      // ================= Drawer =================
       drawer: Drawer(
         child: Column(
           children: [
-            const UserAccountsDrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF00A7B3)),
-              accountName: Text("Admin"),
-              accountEmail: Text("admin@lifelink.com"),
-              currentAccountPicture: CircleAvatar(
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF00A7B3)),
+              accountName: const Text("Admin"),
+              accountEmail: const Text("admin@lifelink.com"),
+              currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(
                   Icons.admin_panel_settings,
-                  color: Color(0xFF00A7B3),
+                  color: Colors.black,
                   size: 40,
                 ),
               ),
             ),
 
-            // Admin Home (الصفحة الحالية)
+            //ListTile(
+            // leading: const Icon(Icons.dashboard),
+            // title: const Text("Dashboard"),
+            // onTap: () {
+            //  Navigator.pop(context);
+            //},
+            //),
             ListTile(
-              leading: Icon(
-                Icons.admin_panel_settings,
-                color: currentRoute == "adminHome"
-                    ? const Color(0xFF00A7B3)
-                    : Colors.black,
-              ),
-              title: Text(
-                "Admin Home",
-                style: TextStyle(
-                  color: currentRoute == "adminHome"
-                      ? const Color(0xFF00A7B3)
-                      : Colors.black,
-                  fontWeight: currentRoute == "adminHome"
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.inventory),
+              title: const Text("Blood Inventory"),
+              onTap: () {
+                _navigateAndCloseDialog(context, "bloodInventoryAdmin");
+              },
             ),
 
-            // Blood Inventory
             ListTile(
-              leading: Icon(
-                Icons.inventory,
-                color: currentRoute == "bloodInventoryAdmin"
-                    ? const Color(0xFF00A7B3)
-                    : Colors.black,
-              ),
-              title: Text(
-                "Blood Inventory",
-                style: TextStyle(
-                  color: currentRoute == "bloodInventoryAdmin"
-                      ? const Color(0xFF00A7B3)
-                      : Colors.black,
-                  fontWeight: currentRoute == "bloodInventoryAdmin"
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-              onTap: () =>
-                  _navigateAndCloseDrawer("bloodInventoryAdmin"),
+              leading: const Icon(Icons.people),
+              title: const Text("Users"),
+              onTap: () {},
             ),
 
-            // Users
             ListTile(
-              leading: Icon(
-                Icons.people,
-                color: currentRoute == "usersAdmin"
-                    ? const Color(0xFF00A7B3)
-                    : Colors.black,
-              ),
-              title: Text(
-                "Users",
-                style: TextStyle(
-                  color: currentRoute == "usersAdmin"
-                      ? const Color(0xFF00A7B3)
-                      : Colors.black,
-                  fontWeight: currentRoute == "usersAdmin"
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-              onTap: () => _navigateAndCloseDrawer("usersAdmin"),
-            ),
-
-            // Reports
-            ListTile(
-              leading: Icon(
-                Icons.bar_chart,
-                color: currentRoute == "reportsAdmin"
-                    ? const Color(0xFF00A7B3)
-                    : Colors.black,
-              ),
-              title: Text(
-                "Reports",
-                style: TextStyle(
-                  color: currentRoute == "reportsAdmin"
-                      ? const Color(0xFF00A7B3)
-                      : Colors.black,
-                  fontWeight: currentRoute == "reportsAdmin"
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-              onTap: () => _navigateAndCloseDrawer("reportsAdmin"),
+              leading: const Icon(Icons.bar_chart),
+              title: const Text("Reports"),
+              onTap: () {},
             ),
 
             const Spacer(),
             const Divider(),
 
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                "Logout",
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: _logout,
+              leading: const Icon(Icons.logout, color: Color(0xFF00A7B3)),
+              title: const Text("Logout"),
+              onTap: () {
+                Navigator.pop(context);
+              },
             ),
           ],
         ),
       ),
-      // ================= End Drawer =================
 
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -211,20 +141,43 @@ class _AdminPageState extends State<AdminPage> {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: .9,
           children: [
             _buildDashboardCard(
-                "Users", usersCount, Icons.people, Colors.orange),
-            _buildDashboardCard("Hospitals", hospitalsCount,
-                Icons.local_hospital, Colors.red),
+              "Users",
+              usersCount,
+              Icons.people,
+              Colors.orange,
+            ),
             _buildDashboardCard(
-                "Available", bagsAvailable, Icons.inventory, Colors.blue),
+              "Hospitals",
+              hospitalsCount,
+              Icons.local_hospital,
+              Colors.red,
+            ),
             _buildDashboardCard(
-                "Reserved", bagsReserved, Icons.pending_actions, Colors.green),
-            _buildDashboardCard("To Deliver", bagsToDeliver,
-                Icons.local_shipping, Colors.amber),
+              "Available",
+              bagsAvailable,
+              Icons.inventory,
+              Colors.blue,
+            ),
             _buildDashboardCard(
-                "Delivered", bagsDelivered, Icons.check_circle, Colors.purple),
+              "Reserved",
+              bagsReserved,
+              Icons.pending_actions,
+              Colors.green,
+            ),
+            _buildDashboardCard(
+              "To Deliver",
+              bagsToDeliver,
+              Icons.local_shipping,
+              Colors.amber,
+            ), // عربية توصيل
+            _buildDashboardCard(
+              "Delivered",
+              bagsDelivered,
+              Icons.check_circle,
+              Colors.purple,
+            ),
           ],
         ),
       ),

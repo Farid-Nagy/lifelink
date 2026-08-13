@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 
 class InvoicePage extends StatelessWidget {
   final double amount;
@@ -16,6 +13,7 @@ class InvoicePage extends StatelessWidget {
   final String? deliveryPhone;
   final String? notes;
 
+  // إضافة حقول جديدة للرقم التسلسلي
   final String invoiceNumber;
   final String transactionNumber;
 
@@ -28,8 +26,8 @@ class InvoicePage extends StatelessWidget {
     required this.hospital,
     required this.quantity,
     required this.receiveDate,
-    required this.invoiceNumber,
-    required this.transactionNumber,
+    required this.invoiceNumber, // مطلوب الآن
+    required this.transactionNumber, // مطلوب الآن
     this.deliveryAddress,
     this.deliveryName,
     this.deliveryPhone,
@@ -51,11 +49,12 @@ class InvoicePage extends StatelessWidget {
         title: const Text("Invoice", style: TextStyle(color: Colors.black)),
         automaticallyImplyLeading: false,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // الصفحة زي ما هي بالضبط
+            // Header
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -73,6 +72,7 @@ class InvoicePage extends StatelessWidget {
                 children: [
                   Icon(Icons.receipt_long, size: 50, color: primary),
                   const SizedBox(height: 12),
+
                   Text(
                     "Payment Successful",
                     style: TextStyle(
@@ -81,6 +81,7 @@ class InvoicePage extends StatelessWidget {
                       color: primary,
                     ),
                   ),
+
                   const SizedBox(height: 6),
                   const Text(
                     "Thank you for using Lifelink",
@@ -89,9 +90,10 @@ class InvoicePage extends StatelessWidget {
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // تفاصيل الفاتورة
+            // تفاصيل الفاتورة - الآن تستخدم القيم المستلمة
             _invoiceItem("Invoice Number", invoiceNumber),
             _invoiceItem("Transaction Number", transactionNumber),
             _invoiceItem("Date", date),
@@ -105,7 +107,9 @@ class InvoicePage extends StatelessWidget {
               _invoiceItem("Delivery Address", deliveryAddress!),
             _invoiceItem("Amount Paid", "${amount.toStringAsFixed(2)} EGP"),
             _invoiceItem("Status", "Successful", highlight: true),
+
             const SizedBox(height: 20),
+
             if (deliveryName != null)
               _invoiceItem("Delivery Name", deliveryName!),
             if (deliveryPhone != null)
@@ -114,7 +118,6 @@ class InvoicePage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // زر العودة
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -139,16 +142,14 @@ class InvoicePage extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // زر تحميل PDF بدون أي تغيير في الصفحة
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  await _generatePdf(); // هنا نعمل PDF
-                },
+                onPressed: () {},
                 icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                 label: const Text(
                   "Download PDF",
@@ -185,6 +186,7 @@ class InvoicePage extends StatelessWidget {
           ),
         ],
       ),
+
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -203,94 +205,5 @@ class InvoicePage extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _generatePdf() async {
-    final pdf = pw.Document();
-
-    final date = "${receiveDate.day}/${receiveDate.month}/${receiveDate.year}";
-    final time = "${DateTime.now().hour}:${DateTime.now().minute}";
-
-    final data = {
-      "Invoice Number": invoiceNumber,
-      "Transaction Number": transactionNumber,
-      "Date": date,
-      "Time": time,
-      "Order Type": orderType,
-      "Payment Method": method,
-      "Blood Type": bloodType,
-      "Hospital": hospital,
-      "Quantity": quantity.toString(),
-      if (deliveryAddress != null) "Delivery Address": deliveryAddress!,
-      "Amount Paid": "${amount.toStringAsFixed(2)} EGP",
-      "Status": "Successful",
-      if (deliveryName != null) "Delivery Name": deliveryName!,
-      if (deliveryPhone != null) "Delivery Phone": deliveryPhone!,
-      if (notes != null) "Notes": notes!,
-    };
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return pw.Padding(
-            padding: const pw.EdgeInsets.all(24),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  "INVOICE",
-                  style: pw.TextStyle(
-                    fontSize: 28,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.teal800,
-                  ),
-                ),
-                pw.Divider(height: 20, thickness: 2, color: PdfColors.grey300),
-                pw.SizedBox(height: 8),
-                pw.Table(
-                  border: pw.TableBorder.all(color: PdfColors.grey300),
-                  columnWidths: {
-                    0: const pw.FlexColumnWidth(2),
-                    1: const pw.FlexColumnWidth(3),
-                  },
-                  children: [
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.teal100),
-                      children: [
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(8),
-                          child: pw.Text("Field", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.all(8),
-                          child: pw.Text("Value", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                    ...data.entries.map(
-                      (e) => pw.TableRow(
-                        children: [
-                          pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text(e.key)),
-                          pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text(e.value)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 30),
-                pw.Text(
-                  "Thank you for using Lifelink ❤️",
-                  textAlign: pw.TextAlign.center,
-                  style: pw.TextStyle(fontSize: 14, color: PdfColors.grey800),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
   }
 }

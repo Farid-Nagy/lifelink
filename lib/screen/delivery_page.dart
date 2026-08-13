@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lifelink/screen/Pay_Now.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 const Color primaryColor = Color(0xFF00A7B3);
 
@@ -15,30 +14,44 @@ class _DeliveryPageState extends State<DeliveryPage> {
   String? selectedBlood;
   String? selectedHospital;
   int count = 1;
-  int availableQty = 0;
   DateTime? receiveDate;
 
   final TextEditingController hospitalNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-
   final double deliveryFee = 50.0;
 
-  // تخزين آخر البيانات المستلمة
-  Map<String, Map<String, dynamic>>? lastBloodData;
+  final List<String> bloodTypes = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
 
-  Stream<Map<String, Map<String, dynamic>>> getBloodStream() {
-    return FirebaseFirestore.instance
-        .collection('blood_inventory')
-        .snapshots()
-        .map((snapshot) {
-      Map<String, Map<String, dynamic>> tempData = {};
-      for (var doc in snapshot.docs) {
-        tempData[doc.id] =
-            Map<String, dynamic>.from(doc['hospitals'] ?? {});
-      }
-      return tempData;
-    });
-  }
+  final Map<String, int> quantities = {
+    'A+': 10,
+    'A-': 4,
+    'B+': 6,
+    'B-': 2,
+    'AB+': 3,
+    'AB-': 1,
+    'O+': 12,
+    'O-': 5,
+  };
+
+  final Map<String, List<String>> hospitals = {
+    'A+': ['Hospital A', 'Hospital B'],
+    'A-': ['Hospital A'],
+    'B+': ['Hospital C'],
+    'B-': ['Hospital C'],
+    'AB+': ['Hospital D'],
+    'AB-': ['Hospital D'],
+    'O+': ['Hospital A', 'Hospital C'],
+    'O-': ['Hospital B'],
+  };
 
   void pickDate() async {
     final date = await showDatePicker(
@@ -50,56 +63,25 @@ class _DeliveryPageState extends State<DeliveryPage> {
     if (date != null) setState(() => receiveDate = date);
   }
 
-  // دالة لتحديث البيانات والمتغيرات المرتبطة
-  void updateBloodData(Map<String, Map<String, dynamic>> newData) {
-    lastBloodData = newData;
-    
-    if (selectedBlood != null) {
-      final availableHospitals = newData[selectedBlood]!.entries
-          .where((entry) {
-            int val = (entry.value is int)
-                ? entry.value as int
-                : (entry.value as num).toInt();
-            return val > 0;
-          })
-          .toList();
-
-      // إذا المستشفى المختارة لم تعد موجودة أو كميتها صفر
-      if (selectedHospital != null &&
-          !availableHospitals.any((entry) => entry.key == selectedHospital)) {
-        selectedHospital = null;
-        count = 1;
-        availableQty = 0;
-      }
-
-      // تحديث availableQty إذا هناك مستشفى مختارة
-      if (selectedHospital != null) {
-        availableQty = (newData[selectedBlood]![selectedHospital]! is int)
-            ? newData[selectedBlood]![selectedHospital]! as int
-            : (newData[selectedBlood]![selectedHospital]! as num).toInt();
-        if (count > availableQty) count = availableQty;
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     bool showDeliveryFee = addressController.text.isNotEmpty;
 
     BoxDecoration boxDecoration({bool selected = false}) => BoxDecoration(
-          color: selected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: primaryColor),
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withOpacity(0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        );
+      color: selected ? primaryColor : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: primaryColor),
+      boxShadow: [
+        BoxShadow(
+          color: primaryColor.withOpacity(0.2),
+          blurRadius: 4,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: primaryColor,
         centerTitle: true,
@@ -113,284 +95,244 @@ class _DeliveryPageState extends State<DeliveryPage> {
           ),
         ),
       ),
-      body: StreamBuilder<Map<String, Map<String, dynamic>>>(
-        stream: getBloodStream(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
 
-          final bloodData = snapshot.data!;
-          
-          // تحديث البيانات عند وصول بيانات جديدة
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (lastBloodData != bloodData) {
-              updateBloodData(bloodData);
-            }
-          });
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            /// BLOOD GRID
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: bloodTypes.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemBuilder: (context, index) {
+                final type = bloodTypes[index];
+                final isSelected = selectedBlood == type;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-
-                /// BLOOD TYPES GRID
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: bloodData.keys.length,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  itemBuilder: (context, index) {
-                    final type = bloodData.keys.elementAt(index);
-
-                    int totalQty = 0;
-                    bloodData[type]!.forEach((key, value) {
-                      int val = (value is int) ? value : (value as num).toInt();
-                      totalQty += val;
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      selectedBlood = type;
+                      selectedHospital = null;
                     });
-
-                    final isSelected = selectedBlood == type;
-
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          selectedBlood = type;
-                          selectedHospital = null;
-                          availableQty = 0;
-                          count = 1;
-                        });
-                      },
-                      child: Container(
-                        decoration: boxDecoration(selected: isSelected),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              type,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Qty: $totalQty',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isSelected
-                                    ? Colors.white70
-                                    : Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
                   },
-                ),
-
-                const SizedBox(height: 20),
-
-                /// HOSPITAL + COUNTER
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        decoration: boxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: DropdownButtonFormField<String>(
-                          key: ValueKey('${selectedBlood}_${bloodData.hashCode}'), // مفتاح ديناميكي لإجبار إعادة البناء
-                          value: selectedHospital,
-                          hint: const Text('Hospital'),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                          ),
-                          items: selectedBlood == null
-                              ? <DropdownMenuItem<String>>[]
-                              : bloodData[selectedBlood]!.entries
-                                  .where((entry) {
-                                    int val = (entry.value is int)
-                                        ? entry.value as int
-                                        : (entry.value as num).toInt();
-                                    return val > 0;
-                                  })
-                                  .map((entry) => DropdownMenuItem<String>(
-                                        value: entry.key,
-                                        child: Text(entry.key),
-                                      ))
-                                  .toList(),
-                          onChanged: selectedBlood == null
-                              ? null
-                              : (value) {
-                                  setState(() {
-                                    selectedHospital = value;
-                                    availableQty = (bloodData[selectedBlood]![selectedHospital]! is int)
-                                        ? bloodData[selectedBlood]![selectedHospital]! as int
-                                        : (bloodData[selectedBlood]![selectedHospital]! as num).toInt();
-                                    count = 1;
-                                  });
-                                },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        decoration: boxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              IconButton(
-                                onPressed: (count > 1 && selectedHospital != null)
-                                    ? () => setState(() => count--)
-                                    : null,
-                                icon: const Icon(Icons.remove, color: primaryColor),
-                              ),
-                              Text(
-                                '$count',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: (selectedHospital != null && count < availableQty)
-                                    ? () => setState(() => count++)
-                                    : null,
-                                icon: const Icon(Icons.add, color: primaryColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                /// Hospital Name
-                Container(
-                  decoration: boxDecoration(),
-                  child: TextField(
-                    controller: hospitalNameController,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                      labelText: 'Hospital Name',
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                /// Address
-                Container(
-                  decoration: boxDecoration(),
-                  child: TextField(
-                    controller: addressController,
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                      labelText: 'Delivery Address',
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// Date
-                InkWell(
-                  onTap: pickDate,
                   child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
+                    decoration: boxDecoration(selected: isSelected),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          type,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Qty: ${quantities[type]}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected ? Colors.white70 : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            /// HOSPITAL + QTY
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Container(
                     decoration: boxDecoration(),
-                    child: Text(
-                      receiveDate == null
-                          ? 'Select Delivery Date'
-                          : 'Delivery Date: ${receiveDate!.day}/${receiveDate!.month}/${receiveDate!.year}',
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedHospital,
+                      hint: const Text('Hospital'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                      ),
+                      items: selectedBlood == null
+                          ? []
+                          : hospitals[selectedBlood]!
+                                .map(
+                                  (h) => DropdownMenuItem(
+                                    value: h,
+                                    child: Text(h),
+                                  ),
+                                )
+                                .toList(),
+                      onChanged: selectedBlood == null
+                          ? null
+                          : (value) => setState(() => selectedHospital = value),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(width: 12),
 
-                if (showDeliveryFee)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                Expanded(
+                  flex: 2,
+                  child: Container(
                     decoration: boxDecoration(),
-                    child: Text(
-                      'Delivery Fee: EGP $deliveryFee',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                  ),
-
-                const SizedBox(height: 20),
-
-                /// NEXT BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    onPressed: selectedBlood != null &&
-                            selectedHospital != null &&
-                            receiveDate != null &&
-                            hospitalNameController.text.isNotEmpty &&
-                            addressController.text.isNotEmpty
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PayNow(
-                                  bloodType: selectedBlood!,
-                                  hospital: hospitalNameController.text,
-                                  quantity: count,
-                                  receiveDate: receiveDate!,
-                                  orderType: "Delivery",
-                                  deliveryAddress: addressController.text,
-                                  deliveryFee: deliveryFee,
-                                ),
-                              ),
-                            );
-                          }
-                        : null,
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: count > 1
+                              ? () => setState(() => count--)
+                              : null,
+                          icon: const Icon(Icons.remove, color: primaryColor),
+                        ),
+                        Text(
+                          '$count',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => count++),
+                          icon: const Icon(Icons.add, color: primaryColor),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
             ),
-          );
-        },
+
+            const SizedBox(height: 16),
+
+            /// Hospital Name
+            Container(
+              decoration: boxDecoration(),
+              child: TextField(
+                controller: hospitalNameController,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  labelText: 'Hospital Name',
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// Delivery Address
+            Container(
+              decoration: boxDecoration(),
+              child: TextField(
+                controller: addressController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                  labelText: 'Delivery Address',
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// DATE
+            InkWell(
+              onTap: pickDate,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: boxDecoration(),
+                child: Text(
+                  receiveDate == null
+                      ? 'Select Delivery Date'
+                      : 'Delivery Date: ${receiveDate!.day}/${receiveDate!.month}/${receiveDate!.year}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// Delivery Fee
+            if (showDeliveryFee)
+              Container(
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                decoration: boxDecoration(),
+                child: Text(
+                  'Delivery Fee: EGP $deliveryFee',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
+            /// NEXT BUTTON
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  shadowColor: primaryColor.withOpacity(0.4),
+                  elevation: 6,
+                ),
+                onPressed:
+                    selectedBlood != null &&
+                        selectedHospital != null &&
+                        receiveDate != null &&
+                        hospitalNameController.text.isNotEmpty &&
+                        addressController.text.isNotEmpty
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PayNow(
+                              bloodType: selectedBlood!,
+                              hospital: hospitalNameController.text,
+                              quantity: count,
+                              receiveDate: receiveDate!,
+                              orderType: "Delivery",
+                              deliveryAddress: addressController.text,
+                              deliveryFee: deliveryFee,
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
+                child: const Text(
+                  'Next',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

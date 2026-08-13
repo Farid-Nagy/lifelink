@@ -1,6 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:lifelink/firebase_options.dart';
+//import 'package:lifelink/auth.dart';
 import 'package:lifelink/screen/login_screen.dart';
 import 'package:lifelink/screen/signup_screen.dart';
 import 'package:lifelink/screen/admin.dart';
@@ -10,14 +9,8 @@ import 'package:lifelink/screen/home_screen.dart';
 import 'package:lifelink/screen/blood_type_page.dart';
 import 'package:lifelink/screen/about_page.dart';
 import 'package:lifelink/screen/delivery_page.dart';
-import 'package:lifelink/screen/ScaleDemo.dart'; 
-import 'package:lifelink/network_wrapper.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+void main() {
   runApp(const MyApp());
 }
 
@@ -29,25 +22,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
-      // IntroScreen هو البداية وهو اللي هيفحص الصلاحية
-      home: const IntroScreen(),
+      home: const HomeScreen(),
       routes: {
-        // هنشيل route الـ auth
-        // "auth": (context) => const Auth(),
-        
-        "scaleDemo": (context) => const IntroScreen(),
-        "admin": (context) => const NetworkWrapper(child: AdminPage()),
-        "homeScreen": (context) => const NetworkWrapper(child: HomeScreen()),
-        "bloodInventoryAdmin": (context) =>
-            const NetworkWrapper(child: BloodInventoryAdminPage()),
+        "admin": (context) => const AdminPage(),
+        "homeScreen": (context) => const HomeScreen(),
+        "bloodInventoryAdmin": (context) => const BloodInventoryAdminPage(),
         "loginScreen": (context) => const LoginScreen(),
         "signupScreen": (context) => const SignupScreen(),
-        "myData": (context) => const NetworkWrapper(child: MyDataScreen()),
-        "aboutPage": (context) => const NetworkWrapper(child: AboutPage()),
-        "bloodTypePage": (context) =>
-            const NetworkWrapper(child: BloodTypePage()),
-        "deliverypage": (context) =>
-            const NetworkWrapper(child: DeliveryPage()),
+        "myData": (context) => const MyDataScreen(),
+        "aboutPage": (context) => const AboutPage(),
+        "bloodTypePage": (context) => const BloodTypePage(),
+        "deliverypage": (context) => const DeliveryPage(),
       },
     );
   }
